@@ -1,0 +1,105 @@
+using Tools;
+Tls tls = new Tls();
+
+Console.Title = "KeepBackup";
+
+string pathOrigin;
+string pathBackup = tls.GetInstall() + "\\Backups";
+string pathConfig = tls.GetInstall() + "\\config.cfg";
+
+int checkInterval = 10;
+
+DateTime dateTimeBackup;
+DateTime dateTimeOrigin;
+
+DirectoryInfo dirInfoBackup;
+DirectoryInfo dirInfoOrigin;
+
+FileInfo fileInfo;
+
+tls.Intro();
+
+//Get path to folder you wish to create a backup of
+while (true)
+{
+    //Make sure there is a directory for the backups
+    if (tls.DirIs(pathBackup))
+    {
+        tls.Msg("Backup directory healthy.");
+    }
+    else
+    {
+        Directory.CreateDirectory(pathBackup);
+        tls.Msg("Backup directory created at app executable file.");
+    }
+    //Check for origin directory in a file - create it if does not exist
+    if (tls.Is(pathConfig))
+    {
+        pathOrigin = tls.ReadLine(pathConfig);
+        break;
+    }
+    else
+    {
+        pathOrigin = tls.Input("Path to folder you wish to keep a backup of: ", "\"");
+        if (tls.DirIs(pathOrigin))
+        {
+            tls.Msg("Path to origin healthy.\n");
+            tls.Write(pathConfig, pathOrigin);
+            break;
+        }
+        else
+        {
+            tls.Msg("Path to origin does not exist.\n");
+        }
+    }
+}
+Console.Clear();
+
+//App loop
+while (true)
+{
+    dirInfoBackup = new DirectoryInfo(pathBackup);
+    dirInfoOrigin = new DirectoryInfo(pathOrigin);
+
+    dateTimeBackup = dirInfoBackup.LastWriteTime;
+    dateTimeOrigin = dirInfoOrigin.LastWriteTime;
+
+    int compare = DateTime.Compare(dateTimeBackup, dateTimeOrigin);
+
+    //tls.Msg($"Compare: {compare}");
+
+    if (compare < 0)//Date for backup is earlier than date for origin
+    {
+        string[] files = Directory.GetFiles(pathOrigin);
+
+        //tls.Msg(files);
+
+        for (int i = 0; i < files.Length; i++)
+        {
+            fileInfo = new FileInfo(files[i]);
+            compare = DateTime.Compare(dateTimeBackup, fileInfo.LastWriteTime);
+
+            //tls.Msg($"Compare 2: {compare}");
+
+            if (compare < 0)
+            {
+                string pathTo = pathBackup + "\\" + fileInfo.Name;
+                while (true)
+                {
+                    if (tls.Is(pathTo))
+                    {
+                        pathTo = pathTo.Replace(fileInfo.Extension, "NEW" + fileInfo.Extension);
+                        tls.Msg("Tag NEW added to file name to avoid overwriting.", 0);
+                    }
+                    else
+                    {
+                        File.Copy(files[i], pathTo);
+                        tls.Msg("File copied to backup.\n", 0);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    tls.Loading(checkInterval, "Waiting until check");
+}
