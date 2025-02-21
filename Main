@@ -5,7 +5,7 @@ Console.Title = "KeepBackup";
 
 string pathOrigin;
 string pathBackup = tls.GetInstall() + "\\Backups";
-string pathConfig = tls.GetInstall() + "\\config.cfg";
+string fileConfig = tls.GetInstall() + "\\config.cfg";
 
 int checkInterval = 10;
 
@@ -33,24 +33,23 @@ while (true)
         tls.Msg("Backup directory created at app executable file.");
     }
     //Check for origin directory in a file - create it if does not exist
-    if (tls.Is(pathConfig))
+    if (tls.Is(fileConfig))
     {
-        pathOrigin = tls.ReadLine(pathConfig);
-        break;
+        pathOrigin = tls.Read(fileConfig);
     }
     else
     {
         pathOrigin = tls.Input("Path to folder you wish to keep a backup of: ", "\"");
-        if (tls.DirIs(pathOrigin))
-        {
-            tls.Msg("Path to origin healthy.\n");
-            tls.Write(pathConfig, pathOrigin);
-            break;
-        }
-        else
-        {
-            tls.Msg("Path to origin does not exist.\n");
-        }
+    }
+    if (tls.DirIs(pathOrigin))
+    {
+        tls.Msg("Path to origin healthy.\n");
+        break;
+    }
+    else
+    {
+        pathOrigin = tls.Input("Path to origin does not exist.\nPaste the origin path here:", "\"");
+        tls.Write(fileConfig, pathOrigin);
     }
 }
 Console.Clear();
@@ -88,8 +87,18 @@ while (true)
                 {
                     if (tls.Is(pathTo))
                     {
-                        pathTo = pathTo.Replace(fileInfo.Extension, "NEW" + fileInfo.Extension);
-                        tls.Msg("Tag NEW added to file name to avoid overwriting.", 0);
+                        if (pathTo.Contains("_Backup"))
+                        {
+                            string digits = tls.GetFromPosUntilEnd("_Backup", pathTo.Replace(fileInfo.Extension, ""));
+                            int value = tls.GetIntegerFromDigits(digits);
+                            value++;
+                            pathTo = pathTo.Replace("_Backup" + digits, "_Backup" + value.ToString());
+                        }
+                        else
+                        {
+                            pathTo = pathTo.Replace(fileInfo.Extension, "_Backup1" + fileInfo.Extension);
+                            tls.Msg("Tagged file to avoid overwriting.", 0);
+                        }
                     }
                     else
                     {
